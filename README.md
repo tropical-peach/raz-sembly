@@ -1,6 +1,6 @@
-	Steven Rad- Seppala
-	Raz-semmbly project
-  First Commit @ 27AUG2014
+					Steven Rad- Seppala
+					Raz-semmbly project
+				  	First Commit @ 27AUG2014
 
 
 arm- is the folder with the tool-chain/cross compiler on it.
