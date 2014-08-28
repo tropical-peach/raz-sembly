@@ -11,5 +11,6 @@ to be used with the r-pi.
 Make sure to export the path so the makefile can be used correctly.
 -----------------------------------------------------------------------------------------
 
+ 
 
-
+ export PATH=$PATH:$HMOE/arm-2008q3/bin
