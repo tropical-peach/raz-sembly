@@ -24,3 +24,43 @@ functionLoop$:
 	lsl r1,r2			;
 	str r1,[r0]			;
 	pop {pc}			;Only general purpose registers and pc can be popped.
+	
+.globl SetGpio
+SetGpio:
+	pinNum .req r0		;alias .req reg sets alias to mean the register reg.
+	pinVal .req r1		
+	cmp pinNum,#53
+	movhi pc,lr
+	push {lr}
+	mov r2,pinNum
+	.unreq pinNum		;.unreq alias removes the alias alias.
+	pinNum .req r2
+	bl GetGpioAddress
+	gpioAddr .req r0
+	pinBank .req r3
+	lsr pinBank,pinNum,#5
+	lsl pinBank,#2
+	add gpioAddr,pinBank
+	.unreq pinBank
+	/*
+	*	The rresult of this is that gpioAddr now contains either 0x20200000
+	*	if the pin number is 0-31, and 0x20200004 if the pin number is 32-53. 
+	*	This means if we add 28 we get the address for turning the pin on, 
+	*	and if we add 40 we get the address for turning the pin off. Since 
+	*	we are done with pinBank, I use .unreq immediately afterwards.
+	*/
+	and pinNum,#31
+	setBit .req r3
+	mov setBit,#1
+	lsl setBit,pinNum
+	.unreq pinNum
+	teq pinVal,#0
+	.unreq pinVal
+	streq setBit,[gpioAddr,#40]
+	strne setBit,[gpioAddr,#28]
+	.unreq setBit
+	.unreq gpioAddr
+	pop {pc}
+
+
+
