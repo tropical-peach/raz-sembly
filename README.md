@@ -1,4 +1,4 @@
-						Steven Rad- Seppala
+						Rad- 
 						Raz-semmbly project
 
 
