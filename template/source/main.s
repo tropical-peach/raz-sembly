@@ -22,3 +22,5 @@ main:
 	.unreq pinNum
 	.unreq pinVal
 	nop
+	nop
+
