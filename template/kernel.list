@@ -2,31 +2,61 @@
 build/output.elf:     file format elf32-littlearm
 
 
-Disassembly of section .init:
+Disassembly of section .text:
 
-00008000 <_start>:
-    8000:	e59f0040 	ldr	r0, [pc, #64]	; 8048 <wait2$+0x14>
-    8004:	e3a01001 	mov	r1, #1
-    8008:	e1a01901 	lsl	r1, r1, #18
-    800c:	e5801004 	str	r1, [r0, #4]
-    8010:	e3a01001 	mov	r1, #1
-    8014:	e1a01801 	lsl	r1, r1, #16
+00000000 <GetGpioAddress>:
+   0:	e59f00a0 	ldr	r0, [pc, #160]	; a8 <SetGpio+0x50>
+   4:	e1a0f00e 	mov	pc, lr
 
-00008018 <loop$>:
-    8018:	e5801028 	str	r1, [r0, #40]	; 0x28
-    801c:	e3a0283f 	mov	r2, #4128768	; 0x3f0000
+00000008 <SetGpioFunction>:
+   8:	e3500035 	cmp	r0, #53	; 0x35
+   c:	93510007 	cmpls	r1, #7
+  10:	81a0f00e 	movhi	pc, lr
+  14:	e1a00000 	nop			; (mov r0, r0)
+  18:	e52de004 	push	{lr}		; (str lr, [sp, #-4]!)
+  1c:	e1a00000 	nop			; (mov r0, r0)
+  20:	e1a02000 	mov	r2, r0
+  24:	ebfffff5 	bl	0 <GetGpioAddress>
+  28:	e1a00000 	nop			; (mov r0, r0)
 
-00008020 <wait1$>:
-    8020:	e2422001 	sub	r2, r2, #1
-    8024:	e3520000 	cmp	r2, #0
-    8028:	1afffffc 	bne	8020 <wait1$>
-    802c:	e580101c 	str	r1, [r0, #28]
-    8030:	e3a0283f 	mov	r2, #4128768	; 0x3f0000
+0000002c <functionLoop$>:
+  2c:	e3520009 	cmp	r2, #9
+  30:	8242200a 	subhi	r2, r2, #10
+  34:	82800004 	addhi	r0, r0, #4
+  38:	8afffffb 	bhi	2c <functionLoop$>
+  3c:	e0822082 	add	r2, r2, r2, lsl #1
+  40:	e1a00000 	nop			; (mov r0, r0)
+  44:	e1a01211 	lsl	r1, r1, r2
+  48:	e5801000 	str	r1, [r0]
+  4c:	e1a00000 	nop			; (mov r0, r0)
+  50:	e49df004 	pop	{pc}		; (ldr pc, [sp], #4)
+  54:	e1a00000 	nop			; (mov r0, r0)
 
-00008034 <wait2$>:
-    8034:	e2422001 	sub	r2, r2, #1
-    8038:	e3520000 	cmp	r2, #0
-    803c:	1afffffc 	bne	8034 <wait2$>
-    8040:	eafffff4 	b	8018 <loop$>
-    8044:	e1a00000 	nop			; (mov r0, r0)
-    8048:	20200000 	.word	0x20200000
+00000058 <SetGpio>:
+  58:	e1a00000 	nop			; (mov r0, r0)
+  5c:	e3500035 	cmp	r0, #53	; 0x35
+  60:	81a0f00e 	movhi	pc, lr
+  64:	e52de004 	push	{lr}		; (str lr, [sp, #-4]!)
+  68:	e1a02000 	mov	r2, r0
+  6c:	e1a00000 	nop			; (mov r0, r0)
+  70:	ebffffe2 	bl	0 <GetGpioAddress>
+  74:	e1a00000 	nop			; (mov r0, r0)
+  78:	e1a00000 	nop			; (mov r0, r0)
+  7c:	e1a032a2 	lsr	r3, r2, #5
+  80:	e1a03103 	lsl	r3, r3, #2
+  84:	e0800003 	add	r0, r0, r3
+  88:	e202201f 	and	r2, r2, #31
+  8c:	e3a03001 	mov	r3, #1
+  90:	e1a03213 	lsl	r3, r3, r2
+  94:	e1a00000 	nop			; (mov r0, r0)
+  98:	e3310000 	teq	r1, #0
+  9c:	05803028 	streq	r3, [r0, #40]	; 0x28
+  a0:	1580301c 	strne	r3, [r0, #28]
+  a4:	e49df004 	pop	{pc}		; (ldr pc, [sp], #4)
+  a8:	20200000 	.word	0x20200000
+  ac:	e3a0083f 	mov	r0, #4128768	; 0x3f0000
+
+000000b0 <wait2$>:
+  b0:	e2400001 	sub	r0, r0, #1
+  b4:	e3300000 	teq	r0, #0
+  b8:	1afffffc 	bne	b0 <wait2$>
