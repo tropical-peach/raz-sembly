@@ -6,10 +6,12 @@
 
 .section .init
 .globl _start
+
 _start:
 	b main
 
 .section .text
+
 main:
 	mov sp,#0x8000		@setup stack pointer
 	pinNum .req r0		@alias these two pins
@@ -19,8 +21,6 @@ main:
 	bl SetGpioFunction	@link to set function
 	.unreq pinNum		@unalias these two pins
 	.unreq pinFunc
-	
-	
 loop$:
 	pinNum .req r0		@alias these two pins
 	pinVal .req r1		@
@@ -34,6 +34,8 @@ loop$:
 
 	decr .req r0		@'this is a pointless function'
 	mov decr,#0x3F0000	@'that kills time by looping'
+	decr .req r0		@'this is a pointless function'
+	mov decr,#0x3F0000	@'that kills time by looping' 	mov decr,#0x7E0000	
 wait1$: 
 	sub decr,#1
 	teq decr,#0
@@ -51,14 +53,14 @@ wait1$:
 	/*
 	* Wait once more.
 	*/
-	decr .req r0
-	mov decr,#0x3F0000
+	mov r0,#0x3F0000
 wait2$:
-	sub decr,#1
-	teq decr,#0
+	sub r0,#1
+	teq r0,#0
 	bne wait2$
 	.unreq decr
 
 	@'Repeat program'
 	b loop$
 	nop
+	beq loop$
