@@ -5,9 +5,9 @@
 */
 
 .section .init
-.globl start
+.globl _start
 
-start:
+_start:
 	b main
 	nop
 	
