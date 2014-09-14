@@ -1,10 +1,25 @@
 ###############################################################################
 #	makefile
 #	 by Alex Chadwick
-#
+#	
 #	A makefile script for generation of raspberry pi kernel images.
+#	13September2014:
+#			Added code and targets to build ELF for GDB debugging of code
+#
 ###############################################################################
 
+
+#*****************************************************************************
+# The compiler to use for ELF building
+CC = arm-linux-gnueabi-as
+
+# Loader to use after making oject files
+LDCC = arm-linux-gnueabi-ld
+
+# ELF compiler flags
+ELFFLG = -o
+
+#*****************************************************************************
 # The toolchain to use. arm-none-eabi works, but there does exist 
 # arm-bcm2708-linux-gnueabi.
 ARMGNU ?= arm-none-eabi
@@ -31,6 +46,8 @@ LINKER = kernel.ld
 # assembly code files in source.
 OBJECTS := $(patsubst $(SOURCE)%.s,$(BUILD)%.o,$(wildcard $(SOURCE)*.s))
 
+# Rule to make ELF file
+
 # Rule to make everything.
 all: $(TARGET) $(LIST)
 
@@ -47,7 +64,7 @@ $(TARGET) : $(BUILD)output.elf
 
 # Rule to make the elf file.
 $(BUILD)output.elf : $(OBJECTS) $(LINKER)
-	$(ARMGNU)-ld --no-undefined $(OBJECTS) -Map $(MAP) -o $(BUILD)output.elf -T $(LINKER)
+	$(ARMGNU)-ld --no-undefined $(OBJECTS) -Map $(MAP) -o -g $(BUILD)output.elf -T $(LINKER)
 
 # Rule to make the object files.
 $(BUILD)%.o: $(SOURCE)%.s $(BUILD)
