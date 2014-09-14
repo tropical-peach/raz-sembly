@@ -5,11 +5,12 @@
 */
 
 .section .init
-.globl _start
+.globl start
 
-_start:
+start:
 	b main
-
+	nop
+	
 .section .text
 
 main:
@@ -58,9 +59,7 @@ wait2$:
 	sub r0,#1
 	teq r0,#0
 	bne wait2$
-	.unreq decr
 
 	@'Repeat program'
 	b loop$
 	nop
-	beq loop$

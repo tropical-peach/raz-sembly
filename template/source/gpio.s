@@ -1,77 +1,108 @@
-.globl GetGpioAddress
-GetGpioAddress:
-	ldr r0,=0x20200000	@GPIO starting adress
-	mov pc,lr			@lr always contains the return adress, (link register)
-	
-.globl SetGpioFunction
-SetGpioFunction:		
-	cmp r0,#53			@compares r0 to 53, if true then next command runs
-	cmpls r1,#7			@only runs if r0 < 53
-	movhi pc,lr			@if 'r1 > 7' or if 'r0 > 53' (whichever executed last)
-	nop					@then moves lr to pc
-	push {lr}			@puts lr to top of the stack
-	nop					@ 'PUSH LR ONTO THE STACK'
-	mov r2,r0			@move right to left (r0 -> r2)
-	bl GetGpioAddress	
-	nop
-	functionLoop$:
-		cmp r2,#9			@compare r2 = 9
-		subhi r2,#10		@if r2>9, r2 - 10
-		addhi r0,#4			@if r2>9, r0 + 4
-		bhi functionLoop$	@This would be the same as GPIO Controller Address + 4 × (GPIO Pin Number ÷ 10).
-		add r2, r2,lsl #1	@One of the very useful features of the ARMv6 assembly code language is the ability to shift an argument before using it. 
-		nop					@In this case, I add r2 to the result of shifting the binary representation of r2 to the left by one place.
-		lsl r1,r2			@
-		str r1,[r0]			@Brackets reference the register pointer
-		nop					@and stores the value pointed to by the register
-		pop {pc}			@Only general purpose registers and pc can be popped.
-		nop					@'POP LR FROM STACK AND PUT INTO PC'
-		
-		
+/* 
+* According to the EABI, all method calls should use r0-r3 for passing
+* parameters, should preserve registers r4-r8,r10-r11,sp between calls, and 
+* should return values in r0 (and r1 if needed). 
+* It does also stipulate many things about how methods should use the registers
+* and stack during calls, but we're using hand coded assembly. All we need to 
+* do is obey the start and end conditions, and if all our methods do this, they
+* would all work from C.
+*/
 
-#'NOTE THAT THIS IS NOT THE SETGPIOFUNCTION, ITS THE'
-#'SET GPIO ROUTINE'
-.globl SetGpio
-SetGpio:
-	pinNum .req r0		@alias .req reg sets alias to mean the register reg.
-	pinVal .req r1		
-	nop
-	cmp pinNum,#53		@test r0 = 53
-	movhi pc,lr			@ r0 > 53 => pc gets lr
-	push {lr}			@ 'PUSH LR ONTO THE STACK'
+/* 
+* GetGpioAddress returns the base address of the GPIO region as a physical address
+* in register r0.
+* C++ Signature: void* GetGpioAddress()
+*/
+.globl GetGpioAddress
+GetGpioAddress: 
+	gpioAddr .req r0
+	ldr gpioAddr,=0x20200000
+	mov pc,lr
+	.unreq gpioAddr
+
+/* 
+* SetGpioFunction sets the function of the GPIO register addressed by r0 to the
+* low  3 bits of r1.
+* C++ Signature: void SetGpioFunction(u32 gpioRegister, u32 function)
+*/
+.globl SetGpioFunction
+SetGpioFunction:
+    pinNum .req r0
+    pinFunc .req r1
+	cmp pinNum,#53
+	cmpls pinFunc,#7
+	movhi pc,lr
+
+	push {lr}
 	mov r2,pinNum
-	.unreq pinNum		@.unreq alias removes the alias alias.
-	nop					@'             '
+	.unreq pinNum
 	pinNum .req r2
 	bl GetGpioAddress
-	nop					@'             '
 	gpioAddr .req r0
+
+	functionLoop$:
+		cmp pinNum,#9
+		subhi pinNum,#10
+		addhi gpioAddr,#4
+		bhi functionLoop$
+
+	add pinNum, pinNum,lsl #1
+	lsl pinFunc,pinNum
+
+	mask .req r3
+	mov mask,#7					/* r3 = 111 in binary */
+	lsl mask,pinNum				/* r3 = 11100..00 where the 111 is in the same position as the function in r1 */
+	.unreq pinNum
+
+	mvn mask,mask				/* r3 = 11..1100011..11 where the 000 is in the same poisiont as the function in r1 */
+	oldFunc .req r2
+	ldr oldFunc,[gpioAddr]		/* r2 = existing code */
+	and oldFunc,mask			/* r2 = existing code with bits for this pin all 0 */
+	.unreq mask
+
+	orr pinFunc,oldFunc			/* r1 = existing code with correct bits set */
+	.unreq oldFunc
+
+	str pinFunc,[gpioAddr]
+	.unreq pinFunc
+	.unreq gpioAddr
+	pop {pc}
+
+/* 
+* SetGpio sets the GPIO pin addressed by register r0 high if r1 != 0 and low
+* otherwise. 
+* C++ Signature: void SetGpio(u32 gpioRegister, u32 value)
+*/
+.globl SetGpio
+SetGpio:	
+    pinNum .req r0
+    pinVal .req r1
+
+	cmp pinNum,#53
+	movhi pc,lr
+	push {lr}
+	mov r2,pinNum	
+    .unreq pinNum	
+    pinNum .req r2
+	bl GetGpioAddress
+    gpioAddr .req r0
+
 	pinBank .req r3
-	nop					@'             '
 	lsr pinBank,pinNum,#5
 	lsl pinBank,#2
 	add gpioAddr,pinBank
 	.unreq pinBank
+
 	and pinNum,#31
 	setBit .req r3
 	mov setBit,#1
 	lsl setBit,pinNum
 	.unreq pinNum
-	/*
-	*	The result of this is that gpioAddr now contains either 0x20200000
-	*	if the pin number is 0-31, and 0x20200004 if the pin number is 32-53. 
-	*	This means if we add 28 we get the address for turning the pin on, 
-	*	and if we add 40 we get the address for turning the pin off. Since 
-	*	we are done with pinBank, we use .unreq immediately afterwards.
-	*/	
-	nop
+
 	teq pinVal,#0
 	.unreq pinVal
 	streq setBit,[gpioAddr,#40]
 	strne setBit,[gpioAddr,#28]
 	.unreq setBit
 	.unreq gpioAddr
-	pop {pc}			@'POP LR FROM STACK AND PUT INTO PC'
-
-
-
+	pop {pc}
