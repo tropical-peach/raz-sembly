@@ -14,52 +14,41 @@ _start:
 .section .text
 
 main:
-	mov sp,#0x8000		@setup stack pointer
-	pinNum .req r0		@alias these two pins
+	mov sp,#0x8000		@;setup stack pointer
+	pinNum .req r0		@;alias these two pins
 	pinFunc .req r1		
-	mov pinNum,#16		@select pin number 16
-	mov pinFunc,#1		@set pin function number 1
-	bl SetGpioFunction	@link to set function
-	.unreq pinNum		@unalias these two pins
+	mov pinNum,#16		@;select pin number 16
+	mov pinFunc,#1		@;set pin function number 1
+	bl SetGpioFunction	@;link to set function
+	.unreq pinNum		@;unalias these two pins
 	.unreq pinFunc
 loop$:
-	pinNum .req r0		@alias these two pins
-	pinVal .req r1		@
-	mov pinNum,#16		@set pin 16
-	mov pinVal,#0		@select function 0
+	pinNum .req r0		@;alias these two pins
+	pinVal .req r1		@;
+	mov pinNum,#16		@;set pin 16
+	mov pinVal,#0		@;select function 0
 	bl SetGpio
-	.unreq pinNum		@unalias
+	.unreq pinNum		@;unalias
 	.unreq pinVal
-	nop					@nops
+	nop					@;nops
 	nop
 
-	decr .req r0		@'this is a pointless function'
-	mov decr,#0x3F0000	@'that kills time by looping'
-	decr .req r0		@'this is a pointless function'
-	mov decr,#0x3F0000	@'that kills time by looping' 	mov decr,#0x7E0000	
-wait1$: 
-	sub decr,#1
-	teq decr,#0
-	bne wait1$
-	.unreq decr
+	ldr r0,=100000		@;delay of 100000us
+	bl TimeDelay		@;timedelay link
+	nop
 
-	pinNum .req r0
-	pinVal .req r1
-	mov pinNum,#16
-	mov pinVal,#1
-	bl SetGpio
-	.unreq pinNum
-	.unreq pinVal
+	mov r0, #16			@;set pin 16
+	mov r1, #1			@;set to high
+	bl SetGpio 			@;pass to GPIO
+	nop					@;to turn LED on
 
-	/*
-	* Wait once more.
-	*/
-	mov r0,#0x3F0000
-wait2$:
-	sub r0,#1
-	teq r0,#0
-	bne wait2$
+	ldr r0,=100000		@;delay of 100000us
+	bl TimeDelay 		@;execute delay
+	
 
 	@'Repeat program'
 	b loop$
 	nop
+
+
+

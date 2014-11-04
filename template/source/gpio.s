@@ -50,17 +50,19 @@ SetGpioFunction:
 	lsl pinFunc,pinNum
 
 	mask .req r3
-	mov mask,#7					/* r3 = 111 in binary */
-	lsl mask,pinNum				/* r3 = 11100..00 where the 111 is in the same position as the function in r1 */
+	mov mask,#7					@;r3 = 111 in binary */
+	lsl mask,pinNum				@;r3 = 11100..00 where the 111 is in the 
+	nop 						@;same position as the function in r1 */
 	.unreq pinNum
 
-	mvn mask,mask				/* r3 = 11..1100011..11 where the 000 is in the same poisiont as the function in r1 */
+	mvn mask,mask				@;r3 = 11..1100011..11 where the 000 is in 
+	nop 						@;the same poisiont as the function in r1 */
 	oldFunc .req r2
-	ldr oldFunc,[gpioAddr]		/* r2 = existing code */
-	and oldFunc,mask			/* r2 = existing code with bits for this pin all 0 */
+	ldr oldFunc,[gpioAddr]		@;r2 = existing code */
+	and oldFunc,mask			@;r2 = existing code with bits for this pin all 0 */
 	.unreq mask
 
-	orr pinFunc,oldFunc			/* r1 = existing code with correct bits set */
+	orr pinFunc,oldFunc			@;r1 = existing code with correct bits set */
 	.unreq oldFunc
 
 	str pinFunc,[gpioAddr]
@@ -106,3 +108,67 @@ SetGpio:
 	.unreq setBit
 	.unreq gpioAddr
 	pop {pc}
+
+
+.globl GetMailBoxLocation
+GetMailBoxLocation:
+	ldr r0, =0x2000B880
+	mov pc,lr
+
+@;This function  takes input from
+@;register r0 and a mailbox to write to from 
+@;register r1.
+@;It must validate the mailbox by checking the low 4 bits
+@;are zero.
+@; 	Gets mailbox base; read status field, check top bit is
+@;		zero. write it to the channel after validating.
+
+.globl MailboxWrite
+MailboxWrite:
+	tst r0, #0b1111 	@;tst => and reg,#val and compare with 0
+	movne pc, lr 		@;Go back if it fails
+	cmp r1, #15 		@;check r1 for = 15
+	movhi pc, lr  		@;
+	nop					
+	Lane .req r1
+	Value .req r2
+	mov Value, r0		@;send r0 to the value
+	push {lr}			@;save link register 
+	bl GetGpioAddress	@;get the gpio adress
+	mailbox .req r0		@;alias r0 to mailbox
+DeltaT:					@;Make sure that the top bit is zero
+	status .req r3		@;alias r3 to status
+	ldr status,[mailbox,#0x18]	@;load register mailbox w/ 0x18 offset to status
+	tst status,#0x80000000		@;test status to value
+	.unreq status				@;if not equal loop
+	bne DeltaT						
+	add Value, Lane				@;sum value with lane
+	.unreq Lane							
+	str Value,[mailbox,#0x20]	@;write the value into the mailbox lane
+	.unreq mailbox
+	pop {pc}					@; return from the function
+
+@; This function is similar in that it reads from a 
+@;	mailbox (r0) and must be validated
+@; It reads the status field and validsates the 30th bit to ensure
+@; that it is zero. It then wil read the field and check if it is the
+@;  correct mailbox, ottherwise loop.
+
+.globl MailboxRead
+MailboxRead:
+	cmp r0, #15
+	movhi pc,lr 	@;validates, otherwise return
+	Lane .req r1	@;alias Lane to r1
+	mov Lane, r0	@;coppies r0 to lane
+	push {lr}		@;save link register
+	bl GetMailBoxLocation 	@;Go and get mailbox memory lock
+	mailbox .req r0			@;r0 should now contain mem lock, so alias it
+Correct_Mailbox:
+	nop
+DeltaT2:
+	status .req r2 	@;alias r2
+	ldr status,[mailbox,#0x18]	@;load register with mailbox,#0x18
+	tst status,#0x40000000		@;test if status has correct value
+	.unreq status 				@;unalias
+	bne DeltaT2 				@;if its not correct, loop back
+

@@ -1,38 +1,51 @@
 
 Discarded input sections
 
- .bss           0x00000000        0x0 build/gpio.o
+ .bss           0x0000000000000000        0x0 build/gpio.o
  .ARM.attributes
-                0x00000000       0x14 build/gpio.o
- .bss           0x00000000        0x0 build/main.o
+                0x0000000000000000       0x14 build/gpio.o
+ .bss           0x0000000000000000        0x0 build/main.o
  .ARM.attributes
-                0x00000000       0x14 build/main.o
+                0x0000000000000000       0x14 build/main.o
+ .bss           0x0000000000000000        0x0 build/systemTimer.o
+ .ARM.attributes
+                0x0000000000000000       0x14 build/systemTimer.o
 
 Memory Configuration
 
 Name             Origin             Length             Attributes
-*default*        0x00000000         0xffffffff
+*default*        0x0000000000000000 0xffffffffffffffff
 
 Linker script and memory map
 
 LOAD build/gpio.o
 LOAD build/main.o
+LOAD build/systemTimer.o
 
-.init
+.init           0x0000000000008000        0x8
  *(.init)
+ .init          0x0000000000008000        0x8 build/main.o
+                0x0000000000008000                _start
 
-.text           0x00000000       0xbc
+.text           0x0000000000008008      0x178
  *(.text)
- .text          0x00000000       0xac build/gpio.o
-                0x00000000                GetGpioAddress
-                0x00000008                SetGpioFunction
-                0x00000058                SetGpio
- .text          0x000000ac       0x10 build/main.o
+ .text          0x0000000000008008       0xe4 build/gpio.o
+                0x0000000000008008                GetGpioAddress
+                0x0000000000008010                SetGpioFunction
+                0x0000000000008068                SetGpio
+                0x00000000000080a4                GetMailBoxLocation
+                0x00000000000080ac                MailboxWrite
+ .text          0x00000000000080ec       0x54 build/main.o
+ .text          0x0000000000008140       0x40 build/systemTimer.o
+                0x0000000000008140                GetSystemTimerBase
+                0x0000000000008148                GetTimeStamp
+                0x0000000000008158                TimeDelay
 
-.data           0x000000bc        0x0
+.data           0x0000000000008180        0x0
  *(.data)
- .data          0x000000bc        0x0 build/gpio.o
- .data          0x000000bc        0x0 build/main.o
+ .data          0x0000000000008180        0x0 build/gpio.o
+ .data          0x0000000000008180        0x0 build/main.o
+ .data          0x0000000000008180        0x0 build/systemTimer.o
 
 /DISCARD/
  *(*)
