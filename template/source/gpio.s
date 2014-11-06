@@ -157,18 +157,31 @@ DeltaT:					@;Make sure that the top bit is zero
 .globl MailboxRead
 MailboxRead:
 	cmp r0, #15
-	movhi pc,lr 	@;validates, otherwise return
-	Lane .req r1	@;alias Lane to r1
-	mov Lane, r0	@;coppies r0 to lane
-	push {lr}		@;save link register
+	movhi pc,lr 			@;validates, otherwise return
+	Lane .req r1			@;alias Lane to r1
+	mov Lane, r0			@;coppies r0 to lane
+	push {lr}				@;save link register
 	bl GetMailBoxLocation 	@;Go and get mailbox memory lock
 	mailbox .req r0			@;r0 should now contain mem lock, so alias it
 Correct_Mailbox:
 	nop
 DeltaT2:
-	status .req r2 	@;alias r2
+	status .req r2 				@;alias r2
 	ldr status,[mailbox,#0x18]	@;load register with mailbox,#0x18
 	tst status,#0x40000000		@;test if status has correct value
 	.unreq status 				@;unalias
 	bne DeltaT2 				@;if its not correct, loop back
+	mail_inbox .req r2
+	ldr mail_inbox,[mailbox,#0]	@;get the mail
+	in_Lane .req r2
+	and in_Lane,mail_inbox,#0b1111	@;and mail with b'1111
+	teq in_Lane, Lane 			@;test if resule is equal to Lane
+	.unreq in_Lane				
+	bne Correct_Mailbox			@;if its not, loop back and try again
+	.unreq mailbox
+	.unreq Lane
+	and r0,mail_inbox,#0xfffffff0	@;take the mail and put it into the result reg
+	.unreq mail_inbox
+	pop {pc}
 
+	

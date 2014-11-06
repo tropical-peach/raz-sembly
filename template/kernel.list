@@ -5,13 +5,13 @@ build/output.elf:     file format elf32-littlearm
 Disassembly of section .init:
 
 00008000 <_start>:
-    8000:	ea000039 	b	80ec <main>
+    8000:	ea000048 	b	8128 <main>
     8004:	e1a00000 	nop			; (mov r0, r0)
 
 Disassembly of section .text:
 
 00008008 <GetGpioAddress>:
-    8008:	e59f00d4 	ldr	r0, [pc, #212]	; 80e4 <DeltaT+0x18>
+    8008:	e59f0110 	ldr	r0, [pc, #272]	; 8120 <DeltaT2+0x24>
     800c:	e1a0f00e 	mov	pc, lr
 
 00008010 <SetGpioFunction>:
@@ -58,7 +58,7 @@ Disassembly of section .text:
     80a0:	e49df004 	pop	{pc}		; (ldr pc, [sp], #4)
 
 000080a4 <GetMailBoxLocation>:
-    80a4:	e59f003c 	ldr	r0, [pc, #60]	; 80e8 <DeltaT+0x1c>
+    80a4:	e59f0078 	ldr	r0, [pc, #120]	; 8124 <DeltaT2+0x28>
     80a8:	e1a0f00e 	mov	pc, lr
 
 000080ac <MailboxWrite>:
@@ -78,54 +78,75 @@ Disassembly of section .text:
     80d8:	e0822001 	add	r2, r2, r1
     80dc:	e5802020 	str	r2, [r0, #32]
     80e0:	e49df004 	pop	{pc}		; (ldr pc, [sp], #4)
-    80e4:	20200000 	.word	0x20200000
-    80e8:	2000b880 	.word	0x2000b880
 
-000080ec <main>:
-    80ec:	e3a0d902 	mov	sp, #32768	; 0x8000
-    80f0:	e3a00010 	mov	r0, #16
-    80f4:	e3a01001 	mov	r1, #1
-    80f8:	ebffffc4 	bl	8010 <SetGpioFunction>
+000080e4 <MailboxRead>:
+    80e4:	e350000f 	cmp	r0, #15
+    80e8:	81a0f00e 	movhi	pc, lr
+    80ec:	e1a01000 	mov	r1, r0
+    80f0:	e52de004 	push	{lr}		; (str lr, [sp, #-4]!)
+    80f4:	ebffffea 	bl	80a4 <GetMailBoxLocation>
 
-000080fc <loop$>:
-    80fc:	e3a00010 	mov	r0, #16
-    8100:	e3a01000 	mov	r1, #0
-    8104:	ebffffd7 	bl	8068 <SetGpio>
-    8108:	e1a00000 	nop			; (mov r0, r0)
-    810c:	e1a00000 	nop			; (mov r0, r0)
-    8110:	e59f0024 	ldr	r0, [pc, #36]	; 813c <loop$+0x40>
-    8114:	eb00000f 	bl	8158 <TimeDelay>
-    8118:	e1a00000 	nop			; (mov r0, r0)
-    811c:	e3a00010 	mov	r0, #16
-    8120:	e3a01001 	mov	r1, #1
-    8124:	ebffffcf 	bl	8068 <SetGpio>
-    8128:	e1a00000 	nop			; (mov r0, r0)
-    812c:	e59f0008 	ldr	r0, [pc, #8]	; 813c <loop$+0x40>
-    8130:	eb000008 	bl	8158 <TimeDelay>
-    8134:	eafffff0 	b	80fc <loop$>
-    8138:	e1a00000 	nop			; (mov r0, r0)
-    813c:	000186a0 	.word	0x000186a0
+000080f8 <Correct_Mailbox>:
+    80f8:	e1a00000 	nop			; (mov r0, r0)
 
-00008140 <GetSystemTimerBase>:
-    8140:	e59f0034 	ldr	r0, [pc, #52]	; 817c <loop$+0x14>
-    8144:	e1a0f00e 	mov	pc, lr
+000080fc <DeltaT2>:
+    80fc:	e5902018 	ldr	r2, [r0, #24]
+    8100:	e3120101 	tst	r2, #1073741824	; 0x40000000
+    8104:	1afffffc 	bne	80fc <DeltaT2>
+    8108:	e5902000 	ldr	r2, [r0]
+    810c:	e202200f 	and	r2, r2, #15
+    8110:	e1320001 	teq	r2, r1
+    8114:	1afffff7 	bne	80f8 <Correct_Mailbox>
+    8118:	e3c2000f 	bic	r0, r2, #15
+    811c:	e49df004 	pop	{pc}		; (ldr pc, [sp], #4)
+    8120:	20200000 	.word	0x20200000
+    8124:	2000b880 	.word	0x2000b880
 
-00008148 <GetTimeStamp>:
-    8148:	e52de004 	push	{lr}		; (str lr, [sp, #-4]!)
-    814c:	ebfffffb 	bl	8140 <GetSystemTimerBase>
-    8150:	e1c000d4 	ldrd	r0, [r0, #4]
-    8154:	e49df004 	pop	{pc}		; (ldr pc, [sp], #4)
+00008128 <main>:
+    8128:	e3a0d902 	mov	sp, #32768	; 0x8000
+    812c:	e3a00010 	mov	r0, #16
+    8130:	e3a01001 	mov	r1, #1
+    8134:	ebffffb5 	bl	8010 <SetGpioFunction>
 
-00008158 <TimeDelay>:
-    8158:	e1a02000 	mov	r2, r0
-    815c:	e52de004 	push	{lr}		; (str lr, [sp, #-4]!)
-    8160:	ebfffff8 	bl	8148 <GetTimeStamp>
-    8164:	e1a03000 	mov	r3, r0
+00008138 <loop$>:
+    8138:	e3a00010 	mov	r0, #16
+    813c:	e3a01000 	mov	r1, #0
+    8140:	ebffffc8 	bl	8068 <SetGpio>
+    8144:	e1a00000 	nop			; (mov r0, r0)
+    8148:	e1a00000 	nop			; (mov r0, r0)
+    814c:	e59f0024 	ldr	r0, [pc, #36]	; 8178 <loop$+0x40>
+    8150:	eb00000f 	bl	8194 <TimeDelay>
+    8154:	e1a00000 	nop			; (mov r0, r0)
+    8158:	e3a00010 	mov	r0, #16
+    815c:	e3a01001 	mov	r1, #1
+    8160:	ebffffc0 	bl	8068 <SetGpio>
+    8164:	e1a00000 	nop			; (mov r0, r0)
+    8168:	e59f0008 	ldr	r0, [pc, #8]	; 8178 <loop$+0x40>
+    816c:	eb000008 	bl	8194 <TimeDelay>
+    8170:	eafffff0 	b	8138 <loop$>
+    8174:	e1a00000 	nop			; (mov r0, r0)
+    8178:	000186a0 	.word	0x000186a0
 
-00008168 <loop$>:
-    8168:	ebfffff6 	bl	8148 <GetTimeStamp>
-    816c:	e0401003 	sub	r1, r0, r3
-    8170:	e1510002 	cmp	r1, r2
-    8174:	9afffffb 	bls	8168 <loop$>
-    8178:	e49df004 	pop	{pc}		; (ldr pc, [sp], #4)
-    817c:	20003000 	.word	0x20003000
+0000817c <GetSystemTimerBase>:
+    817c:	e59f0034 	ldr	r0, [pc, #52]	; 81b8 <loop$+0x14>
+    8180:	e1a0f00e 	mov	pc, lr
+
+00008184 <GetTimeStamp>:
+    8184:	e52de004 	push	{lr}		; (str lr, [sp, #-4]!)
+    8188:	ebfffffb 	bl	817c <GetSystemTimerBase>
+    818c:	e1c000d4 	ldrd	r0, [r0, #4]
+    8190:	e49df004 	pop	{pc}		; (ldr pc, [sp], #4)
+
+00008194 <TimeDelay>:
+    8194:	e1a02000 	mov	r2, r0
+    8198:	e52de004 	push	{lr}		; (str lr, [sp, #-4]!)
+    819c:	ebfffff8 	bl	8184 <GetTimeStamp>
+    81a0:	e1a03000 	mov	r3, r0
+
+000081a4 <loop$>:
+    81a4:	ebfffff6 	bl	8184 <GetTimeStamp>
+    81a8:	e0401003 	sub	r1, r0, r3
+    81ac:	e1510002 	cmp	r1, r2
+    81b0:	9afffffb 	bls	81a4 <loop$>
+    81b4:	e49df004 	pop	{pc}		; (ldr pc, [sp], #4)
+    81b8:	20003000 	.word	0x20003000
