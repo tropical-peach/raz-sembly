@@ -15,6 +15,12 @@ _start:
 
 main:
 	mov sp,#0x8000		@;setup stack pointer
+	mov r0,#1024
+	mov r1,#768
+	mov r2,#16			@;set up messsages to frame func
+	bl Init_Frame_Buffer
+	teq r0, #0			@;test the return value
+	bne N
 	pinNum .req r0		@;alias these two pins
 	pinFunc .req r1		
 	mov pinNum,#16		@;select pin number 16

@@ -17,8 +17,8 @@
 GetGpioAddress: 
 	gpioAddr .req r0
 	ldr gpioAddr,=0x20200000
-	mov pc,lr
 	.unreq gpioAddr
+	mov pc,lr
 
 /* 
 * SetGpioFunction sets the function of the GPIO register addressed by r0 to the
@@ -172,16 +172,15 @@ DeltaT2:
 	.unreq status 				@;unalias
 	bne DeltaT2 				@;if its not correct, loop back
 	mail_inbox .req r2
-	ldr mail_inbox,[mailbox,#0]	@;get the mail
+	ldr mail_inbox,[mailbox,#0]		@;get the mail
 	in_Lane .req r2
 	and in_Lane,mail_inbox,#0b1111	@;and mail with b'1111
-	teq in_Lane, Lane 			@;test if resule is equal to Lane
+	teq in_Lane, Lane 				@;test if resule is equal to Lane
 	.unreq in_Lane				
-	bne Correct_Mailbox			@;if its not, loop back and try again
+	bne Correct_Mailbox				@;if its not, loop back and try again
 	.unreq mailbox
 	.unreq Lane
 	and r0,mail_inbox,#0xfffffff0	@;take the mail and put it into the result reg
 	.unreq mail_inbox
 	pop {pc}
 
-	
