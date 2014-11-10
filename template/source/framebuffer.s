@@ -7,8 +7,7 @@
 @; return, other than that it will return '0' if the
 @; information is in the correct syntax/ able to be processed
 
-.section
-.data
+.section .data
 .align 4
 
 .globl GPU_Frame_Buffer_Data
@@ -24,12 +23,15 @@ GPU_Frame_Buffer_Data:
 	.int 0		@;GPU Pointer
 	.int 0		@;GPU SIZE
 
-.section 
-.text
+
+@;This function shall return the frame buffer pointer in memory 
+@; to the frame buffer that we have requested, if it fails it will return 
+@; a zero.
+.section .text
 
 .globl Init_Frame_Buffer
 Init_Frame_Buffer:
-	wdith .req r0
+	width .req r0
 	height .req r1
 	bitDepth .req r3
 	cmp width,#4096			@;Compares w,h, and bD to their 
@@ -46,7 +48,7 @@ Init_Frame_Buffer:
 	str height,[r4,#4]
 	str width, [r4,#8]
 	str height,[r4,#12]
-	str bidDepth,[r4,#20]	@;this will write into the frame data struct
+	str bitDepth,[r4,#20]	@;this will write into the frame data struct
 	nop						@;the values that we pass into this function
 	.unreq height
 	.unreq width
