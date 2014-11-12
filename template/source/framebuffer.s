@@ -8,7 +8,7 @@
 @; information is in the correct syntax/ able to be processed
 
 .section .data
-.align 4
+.align 12
 
 .globl GPU_Frame_Buffer_Data
 GPU_Frame_Buffer_Data:	
@@ -33,7 +33,7 @@ GPU_Frame_Buffer_Data:
 Init_Frame_Buffer:
 	width .req r0
 	height .req r1
-	bitDepth .req r3
+	bitDepth .req r2
 	cmp width,#4096			@;Compares w,h, and bD to their 
 	cmpls height, #4096		@; wanted values to ensure that they are at least less than
 	cmpls bitDepth, #32		@; the value given. 
@@ -41,8 +41,8 @@ Init_Frame_Buffer:
 	movhi result, #0		@;Using the conditional Execution
 	movhi pc, lr			@; we can ensure that they are all correct
 	nop						@; and return if not
-	FrameInfo .req r4
 	push {r4, lr}			@; push r4 and the link register on to the stack
+	FrameInfo .req r4
 	ldr FrameInfo, =GPU_Frame_Buffer_Data
 	str width, [r4,#0]
 	str height,[r4,#4]

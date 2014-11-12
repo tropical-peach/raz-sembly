@@ -1,9 +1,15 @@
 
 Discarded input sections
 
+ .bss           0x0000000000000000        0x0 build/framebuffer.o
+ .ARM.attributes
+                0x0000000000000000       0x14 build/framebuffer.o
  .bss           0x0000000000000000        0x0 build/gpio.o
  .ARM.attributes
                 0x0000000000000000       0x14 build/gpio.o
+ .bss           0x0000000000000000        0x0 build/mailbox.o
+ .ARM.attributes
+                0x0000000000000000       0x14 build/mailbox.o
  .bss           0x0000000000000000        0x0 build/main.o
  .ARM.attributes
                 0x0000000000000000       0x14 build/main.o
@@ -18,35 +24,43 @@ Name             Origin             Length             Attributes
 
 Linker script and memory map
 
+LOAD build/framebuffer.o
 LOAD build/gpio.o
+LOAD build/mailbox.o
 LOAD build/main.o
 LOAD build/systemTimer.o
 
 .init           0x0000000000008000        0x8
  *(.init)
  .init          0x0000000000008000        0x8 build/main.o
-                0x0000000000008000                _start
+                0x0000000000008000                main
 
-.text           0x0000000000008008      0x1b4
+.text           0x0000000000008008      0x290
  *(.text)
- .text          0x0000000000008008      0x120 build/gpio.o
-                0x0000000000008008                GetGpioAddress
-                0x0000000000008010                SetGpioFunction
-                0x0000000000008068                SetGpio
-                0x00000000000080a4                GetMailBoxLocation
-                0x00000000000080ac                MailboxWrite
-                0x00000000000080e4                MailboxRead
- .text          0x0000000000008128       0x54 build/main.o
- .text          0x000000000000817c       0x40 build/systemTimer.o
-                0x000000000000817c                GetSystemTimerBase
-                0x0000000000008184                GetTimeStamp
-                0x0000000000008194                TimeDelay
+ .text          0x0000000000008008       0x6c build/framebuffer.o
+                0x0000000000008008                Init_Frame_Buffer
+ .text          0x0000000000008074       0xa0 build/gpio.o
+                0x0000000000008074                GetGpioAddress
+                0x000000000000807c                SetGpioFunction
+                0x00000000000080d4                SetGpio
+ .text          0x0000000000008114       0x80 build/mailbox.o
+                0x0000000000008114                GetMailBoxLocation
+                0x000000000000811c                MailboxWrite
+                0x0000000000008154                MailboxRead
+ .text          0x0000000000008194       0xc4 build/main.o
+ .text          0x0000000000008258       0x40 build/systemTimer.o
+                0x0000000000008258                GetSystemTimerBase
+                0x0000000000008260                GetTimeStamp
+                0x0000000000008270                TimeDelay
 
-.data           0x00000000000081bc        0x0
+.data           0x0000000000009000     0x1000
  *(.data)
- .data          0x00000000000081bc        0x0 build/gpio.o
- .data          0x00000000000081bc        0x0 build/main.o
- .data          0x00000000000081bc        0x0 build/systemTimer.o
+ .data          0x0000000000009000     0x1000 build/framebuffer.o
+                0x0000000000009000                GPU_Frame_Buffer_Data
+ .data          0x000000000000a000        0x0 build/gpio.o
+ .data          0x000000000000a000        0x0 build/mailbox.o
+ .data          0x000000000000a000        0x0 build/main.o
+ .data          0x000000000000a000        0x0 build/systemTimer.o
 
 /DISCARD/
  *(*)
