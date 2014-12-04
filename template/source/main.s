@@ -30,6 +30,75 @@ program_init:
 	ERROR$:				@;If we hit this, then there
 		b ERROR$		@;Was some kind of error, check gdb
 Frame_Buffer_OK:
+	fbInfoAddr .req r4
+	mov fbInfoAddr,r0
+	bl SetGraphicsAddress
+	
+	lastRandom .req r7
+	lastX .req r8
+	lastY .req r9
+	color .req r10
+	x .req r5
+	y .req r6
+	mov lastRandom,#0
+	mov lastX,#0
+	mov r9,#0
+	mov r10,#0
+render$:
+	mov r0,lastRandom
+	bl Random
+	mov x,r0
+	bl Random
+	mov y,r0
+	mov lastRandom,r0
+
+	mov r0,color
+	add color,#1
+	lsl color,#16
+	lsr color,#16
+	bl SetForeColor
+		
+	mov r0,lastX
+	mov r1,lastY
+	lsr r2,x,#22
+	lsr r3,y,#22
+
+	cmp r3,#768
+	bhs render$
+	
+	mov lastX,r2
+	mov lastY,r3
+	 
+	bl DrawLine
+
+	b render$
+
+	.unreq x
+	.unreq y
+	.unreq lastRandom
+	.unreq lastX
+	.unreq lastY
+	.unreq color
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	//SAVE THE FOLLOWING FOR FUTURE
 	Frame_Buffer_Info .req r4
 	mov Frame_Buffer_Info, r0	@;
 	Screen_Draw:
@@ -63,33 +132,3 @@ Frame_Buffer_OK:
 	bl SetGpioFunction	@;link to set function
 	.unreq pinNum		@;unalias these two pins
 	.unreq pinFunc
-loop$:
-	pinNum .req r0		@;alias these two pins
-	pinVal .req r1		@;
-	mov pinNum,#16		@;set pin 16
-	mov pinVal,#0		@;select function 0
-	bl SetGpio
-	.unreq pinNum		@;unalias
-	.unreq pinVal
-	nop					@;nops
-	nop
-
-	ldr r0,=100000		@;delay of 100000us
-	bl TimeDelay		@;timedelay link
-	nop
-
-	mov r0, #16			@;set pin 16
-	mov r1, #1			@;set to high
-	bl SetGpio 			@;pass to GPIO
-	nop					@;to turn LED on
-
-	ldr r0,=100000		@;delay of 100000us
-	bl TimeDelay 		@;execute delay
-	
-
-	@'Repeat program'
-	b loop$
-	nop
-
-
-

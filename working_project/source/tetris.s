@@ -1,38 +1,3 @@
-# INFO ABOUT ALLOCATION OF GLOBAL VARIABLES
-# 0x08000000  - address of the beginning of the statically allocated memory,
-#               stored in r12
-# r12 + 0x20  - address of the pointer to the frame buffer
-# r12 + 0x40  - address of the x coordinate of the top left corner of the
-#               currently falling piece
-# r12 + 0x44  - address of the y coordinate of the top left corner of the
-#               currently falling piece
-# r12 + 0x48  - address of the shape of the currently falling piece
-# r12 + 0x4c  - address of the rotation of the currently falling piece
-# r12 + 0x50  - address of the shape of the next piece
-# r12 + 0x54  - address of the x coordinate of the top left corner of the game
-#               board including sentinel values
-# r12 + 0x58  - address of the y coordinate of the top left corner of the game
-#               board including sentinel values
-# r12 + 0x5c  - address of the x coordinate of the bottom right corner of the
-#               game board including sentinel values
-# r12 + 0x60  - address of the y coordinate of the bottom right corner of the
-#               game board including sentinel values
-# r12 + 0x64  - address of the x coordinate of the top-left corner of tested
-#               next position of the falling piece
-# r12 + 0x68  - address of the y coordinate of the top-left corner of tested
-#               next position of the falling piece
-# r12 + 0x6c  - address of the tested rotation of the falling piece
-# r12 + 0x70  - address of the number of last available row to the user
-#               (needed for adding line in multi-player)
-# r12 + 0x74  - address of the seed of the generator of pseudo random numbers
-# r12 + 0x78  - address of the number of lines to send
-# r12 + 0x7c  - address of the number of lines received
-# r12 + 0x80  - address of the beginning of the array in which the rotations
-#               are encoded
-# r12 + 0x800 - address of the beginning of the game board array 
-# r12 + 0xe00 - address of the beginning of the character encoding
-# r12 + 0x1600 - address of the second buffer
-
 b main
 
 # load game assets
@@ -52,6 +17,7 @@ assets:
 	.incbin "filled_grey.bin"
 
 	.incbin "text_next.bin"
+
 
 LoadScreenWelcome:
 	push {lr}
@@ -1237,13 +1203,8 @@ read_result:
 
 #---------------End of negotiations------------------------------------------
 
-#---------------NES Controller Initialisation--------------------------------
+#---------------SNES Controller Initialisation--------------------------------
 
-	# setup clock and latch for reading from GPIO
-	# Pin       - shift
-	# data pin  - 2, 27, 8, 21
-	# clock pin - 1, 18, 4, 24
-	# latch pin - 0, 17, 4, 21
 	# gpio set address - 7 for 0-31, 8 for 32-63
 	# gpio clear address - 10 for 0-31, 11 for 32-63
 	# r3 - 0x20200000
@@ -1309,7 +1270,7 @@ read_result:
 	# store value
 	str r1, [r3, #8]
 
-#---------------End of NES Controler Initialisation----------------------------
+#---------------End of SNES Controler Initialisation----------------------------
 
 
 
@@ -2204,13 +2165,7 @@ wait_player:
 
 	# if start pressed, then send signal to opponent, start game
 	cmp r0, #0x10
-	beq signal_opponent
-	
-	#check if opponent started a game - i.e. sent you a line
-	bl ReceiveLine
-	ldr r0, [r12, #0x7c]
-	cmp r0, #0
-	bne opponent_started_game
+	beq next_fall
 	
 	bl GetTimeStamp
 	cmp r0, r4
@@ -2227,21 +2182,6 @@ wait_player:
 
 b wait_player
 
-signal_opponent:
-	# increase send line counter
-	ldr r3, [r12, #0x78]
-	add r3, r3, #1
-	str r3, [r12, #0x78]
-	# send line to opponent to signal start of a game
-	bl SendLine
-	b next_fall
-
-opponent_started_game:
-	# decrement the number of lines received
-	ldr r0, [r12, #0x7c]
-	sub r0, r0, #1
-	str r0, [r12, #0x7c]
-	
 
 #---------------Main game logic------------------------------------------------
 
@@ -2267,8 +2207,6 @@ get_input:
 	tst r0, r1
 	bne game_won
 
-	bl ReceiveLine
-	bl SendLine
 	bl PollController
 	
 	bl ClearBoard
@@ -2477,15 +2415,8 @@ game_lost:
 	bl LoadScreenLost
 	bl DrawFullScreen
 
-	#send signal that game was lost (pin 23)
-	mov r0, #11
-	bl SetPinHigh
-
 	mov r0, #0x00800000
 	bl Wait
-
-	mov r0, #11
-	bl SetPinLow
 
 	b start_game
 
@@ -3284,49 +3215,31 @@ FitsShape:
 #---------------Generator of pseudo - random numbers---------------------------
 
 RandomGenerator:
-
 	push {r1}
 	push {r2}
-
 	generator_loop:
-		#load previous value (x_n)
 		ldr r0, [r12, #0x74]
-		#generate new value
-		#get a*x_n*x_n
 		mov r1, #0xef00
 		mul r2, r1, r0
 		mul r1, r2, r0
-		#add b*x_n (b=1 = a + 1 mod 4)
 		add r1, r1, r0
-		#add c,move result to r0, store it as "previous value"
 		add r0, r1, #73
 		str r0, [r12, #0x74]
-
-
-		#take 3 bits from result to get value in range 0-7
-		#(if 7 then repeat as our shapes are 0-6)
 		mov r2, #0
-
 		and r1, r0, #0x10
 		mov r1, r1, lsr #4
 		add r2, r2, r1
-
 		and r1, r0, #0x1000
 		mov r1, r1, lsr #11
 		add r2, r2, r1
-
 		and r1, r0, #0x400000
 		mov r1, r1, lsr #20
 		add r2, r2, r1
-
 		mov r0, r2
 	cmp r0, #7
 	beq generator_loop
-
 	pop {r2}
 	pop {r1}
-
-	#return
 	mov pc, lr
 
 #---------------End of the generator of pseudo - random numbers----------------
@@ -3334,30 +3247,18 @@ RandomGenerator:
 #---------------Getting next rotation------------------------------------------
 
 GetNextRotation:
-	#push registers
 	push {r1}
 	push {r2}
-
-	#load current rotation
 	ldr r2, [r12, #0x4c]
-
-
-	#check if it is a special case of "last rotation"
 	cmp r2, #0
 	bne not_last_rotation
-
 	mov r0, #3
 	b return_from_get_rotation
-
 	not_last_rotation:
 	sub r0, r2, #1
-
-
 	return_from_get_rotation:
-	#pop registers
 	pop {r2}
 	pop {r1}
-
 	mov pc, lr
 
 #---------------End of getting next rotation-----------------------------------
@@ -3371,13 +3272,6 @@ EndGame:
 	push {r2}
 	push {r3}
 
-		#add lines sent by opponent, if r0 holds 0, then game was lost
-		push {lr}
-		bl AddLines
-		pop {lr}
-		cmp r0, #0
-		beq end_of_end_game
-		
 		# assume that the game can be continued
 		mov r0, #1
 
@@ -3631,207 +3525,6 @@ DeleteOneRow:
 
 #---------------End of deleting rows-------------------------------------------
 
-#---------------Adding lines---------------------------------------------------
-
-AddLines:
-	#push registers
-	push {lr}
-	push {r2}
-	push {r3}
-
-	#load number of lines to add to r2
-	ldr r2, [r12, #0x7c]
-	mov r3, #0
-	str r3, [r12, #0x7c]
-	
-	
-	loop_add_lines:
-	cmp r2, #0
-	beq end_loop_add_lines
-
-		#check if line can be added
-		bl TopRowEmpty
-		cmp r0, #0
-		beq end_add_lines
-
-		bl MoveRowsUp
-
-		bl FillBottomRow
-
-		#update last available row to user
-		ldr r3, [r12, #0x70]
-		sub r3, r3, #1
-		str r3, [r12, #0x70]
-
-	sub r2, r2, #1
-	b loop_add_lines
-	end_loop_add_lines:
-
-
-	#all lines were added correctly
-	mov r0, #1
-
-	end_add_lines:
-		#pop registers
-		pop {r3}
-		pop {r2}
-		pop {pc}
-
-
-TopRowEmpty:
-	#push registers
-	push {r1}
-	push {r2}
-	push {r3}
-
-	#assume that top row empty
-	mov r0, #1
-	
-	# set r1 to a pointer to the first element of the top row
-	add r1, r12, #0x800
-	add r1, r1, #76
-	
-	mov r2, #0
-	topRowEmpty_loop:
-		# r3 stores the value (colour) of the currently analysed field
-		ldr r3, [r1]
-		# check if the currently analysed field is occupied
-		cmp r3, #0
-		beq topRowEmpty_next_iter
-		# if the currently analysed field is occupied then set r0 to 0
-		# and exit the subroutine
-		mov r0, #0
-		b end_of_topRowEmpty
-                # if the currently analysed field is unoccupied (zero), got to
-                # the next iteration
-		topRowEmpty_next_iter:
-			add r1, r1, #4
-	add r2, r2, #1
-	cmp r2, #10
-	bne topRowEmpty_loop
-	
-	end_of_topRowEmpty:
-		#pop registers
-		pop {r3}
-		pop {r2}
-		pop {r1}
-
-		mov pc, lr
-
-MoveRowsUp:
-	# r1 holds number of row currently being moved
-	# r2 holds number of last available row to player
-	# r3 holds x variable
-	# r4 holds offset from start of gameboard to the block
-	# r5 holds the gameboard address
-	# r6 holds the constant, 0
-	# r7 holds the address to the block at x,y
-	# r8 holds the block at x,y
-
-	push {r1}
-	push {r2}
-	push {r3}
-	push {r4}
-	push {r5}
-	push {r6}
-	push {r7}
-	push {r8}
-
-	# r5 = gameboard_address
-	add r5, r12, #0x800
-
-	# initialise x to 3
-	mov r3, #3
-
-	# load number of last available row
-	ldr r2, [r12, #0x70]
-
-	#move all rows (excluding top row) up - start with y=2
-	mov r1, #2
-	moveRowsUp_loop:
-        # while (y <= last available row)
-	cmp r1, r2
-	bgt end_moveRowsUp_loop
-
-		# r4 = offset = 4 * (x + 16 * y)
-		mov r4, r3
-		add r4, r4, r1, lsl #4
-		lsl r4, #2
-		
-		# load r7 with gameboard_address + offset and r8 with the
-		# block at that address
-		# (r5 has board address)
-		add r7, r4, r5
-		ldr r8, [r7]
-
-		# store the block one row above
-		sub r4, r4, #64
-		add r7, r4, r5
-		str r8, [r7]
-
-		# increment x
-		add r3, r3, #1
-
-		# if x > 12, increment y and set x to 3, re-enter loop
-		moveRowsUp_if:
-			cmp r3, #12
-			ble end_moveRowsUp_if
-
-			mov r3, #3
-			add r1, r1, #1
-		end_moveRowsUp_if:
-
-	b moveRowsUp_loop
-	
-	end_moveRowsUp_loop:
-
-	pop {r8}
-	pop {r7}
-	pop {r6}
-	pop {r5}
-	pop {r4}
-	pop {r3}
-	pop {r2}
-	pop {r1}
-
-	mov pc, lr
-
-FillBottomRow:
-	#push registers
-	push {r1}
-	push {r2}
-	push {r3}
-
-	# set r1 to a pointer to the first element of the last available row
-	add r1, r12, #0x800
-	ldr r2, [r12, #0x70]
-	mov r3, #64
-	mul r2, r3, r2
-	add r2, r2, #12
-	add r1, r1, r2
-
-	#store blocked field number in r3
-	mov r3, #8
-
-	mov r2, #0
-	fillBottomRow_loop:
-		# block the field
-		str r3, [r1]
-		#go to next field
-		add r1, r1, #4
-	add r2, r2, #1
-	cmp r2, #10
-	bne fillBottomRow_loop
-	end_fillBottomRow_loop:
-
-	#pop registers
-	pop {r3}
-	pop {r2}
-	pop {r1}
-
-	mov pc, lr
-
-#---------------End of adding lines--------------------------------------------
 
 #---------------Functions for debugging----------------------------------------
 
